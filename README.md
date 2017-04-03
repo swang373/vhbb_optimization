@@ -93,48 +93,48 @@ Because the optimization is specifically a minimization, the objective function 
 
 The hyperparameter search space is defined internally rather than presented as a configurable option in part due to a segmentation fault otherwise. It covers most if not all of the relevant TMVA BDT options and is sampled once per trial.
 
-[List of TMVA BDT Options](https://tmva.sourceforge.net/optionRef.html#MVA::BDT)
+[TMVA BDT Options and Descriptions](https://tmva.sourceforge.net/optionRef.html#MVA::BDT)
 
-Hyperparameter | Description | Sampling Distribution
---- | --- | ---
-NTrees | Number of trees in the forest | Discrete Uniform {100, 900}
-MaxDepth | Max depth of the decision tree allowed | Discrete Uniform {2, 5}
-MinNodeSize | Minimum percentage of training events required in a leaf node | Uniform (0, 10)
-nCuts | Number of grid points in variable range used in finding optimal cut in node splitting | Discrete Uniform {2, 40}
-BoostType | Boosting type for the trees in the forest | Choice of {AdaBoost, RealAdaBoost, Bagging, Grad}
-UseBaggedBoost | Use only a random subsample of all events for growing the trees in each iteration | Choice of {True, False}
-SeparationType | Separation criterion for node splitting | Choice of {CrossEntropy, GiniIndex, MisClassificationError, SDivSqrtSPlusB}
+Hyperparameter | Sampling Distribution
+--- | ---
+NTrees | Discrete Uniform {100, 900}
+MaxDepth | Discrete Uniform {2, 5}
+MinNodeSize | Uniform (0, 10)
+nCuts | Discrete Uniform {2, 40}
+BoostType | Choice of {AdaBoost, RealAdaBoost, Bagging, Grad}
+UseBaggedBoost | Choice of {True, False}
+SeparationType | Choice of {CrossEntropy, GiniIndex, MisClassificationError, SDivSqrtSPlusB}
 
 Depending on the BoostType chosen for a trial, the following hyperparameters are also present.
 
 - **AdaBoost**
 
-Hyperparameter | Description | Sampling Distribution
---- | --- | ---
-AdaBoostBeta | Learning rate for AdaBoost algorithm | Log Uniform (-5, 1)
-NodePurityLimit | In boosting/pruning, nodes with purity > NodePurityLimit are signal; background otherwise | Uniform (0, 1)
+Hyperparameter | Sampling Distribution
+--- | ---
+AdaBoostBeta | Log Uniform (-5, 1)
+NodePurityLimit | Uniform (0, 1)
 
 - **RealAdaBoost**
 
-Hyperparameter | Description | Sampling Distribution
---- | --- | ---
-AdaBoostBeta | Learning rate for AdaBoost algorithm | Log Uniform (-5, 1)
-UseYesNoLeaf | Use Sig or Bkg categories, or the purity=S/(S+B) as classification of the leaf node -> Real-AdaBoost | Choice of {True, False}
-SigToBkgFraction | Sig to Bkg ratio used in Training (similar to NodePurityLimit, which cannot be used in real adaboost | Uniform (0, 1)
+Hyperparameter | Sampling Distribution
+--- | ---
+AdaBoostBeta | Log Uniform (-5, 1)
+UseYesNoLeaf | Choice of {True, False}
+SigToBkgFraction | Uniform (0, 1)
 
 - **Bagging**
 
-Hyperparameter | Description | Sampling Distribution
---- | --- | ---
-BaggedSampleFraction | Relative size of bagged event sample to original size of the data sample (used whenever bagging is used (i.e. UseBaggedGrad, Bagging,) | Uniform (0, 1)
-NodePurityLimit | In boosting/pruning, nodes with purity > NodePurityLimit are signal; background otherwise | Uniform (0, 1)
+Hyperparameter | Sampling Distribution
+--- | ---
+BaggedSampleFraction | Uniform (0, 1)
+NodePurityLimit | Uniform (0, 1)
 
 - **Grad**
 
-Hyperparameter | Description | Sampling Distribution
---- | --- | ---
-Shrinkage | Learning rate for GradBoost algorithm | Log Uniform (-5, 1)
-NodePurityLimit | In boosting/pruning, nodes with purity > NodePurityLimit are signal; background otherwise | Uniform (0, 1)
+Hyperparameter | Sampling Distribution
+--- | ---
+Shrinkage | Log Uniform (-5, 1)
+NodePurityLimit | Uniform (0, 1)
 
 ## Feedback
 Thanks for beta testing the code! If anything is unclear or breaks, please contact me and I will attempt to help as soon as I can.
