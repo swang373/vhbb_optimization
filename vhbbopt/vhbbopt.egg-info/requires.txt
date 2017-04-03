@@ -1,0 +1,5 @@
+click
+contextlib2
+futures
+hyperopt
+rootpy==0.8.3

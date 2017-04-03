@@ -1,0 +1,4 @@
+[console_scripts]
+preprocess = vhbbopt.preprocess:cli
+optimize = vhbbopt.optimize:cli
+

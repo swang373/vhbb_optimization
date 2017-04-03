@@ -1,0 +1,7 @@
+# Ignore the Python virtual environment.
+venv/
+
+# Ignore dynamically created files and directories.
+TMVAClassification.root
+sample/
+weights/
