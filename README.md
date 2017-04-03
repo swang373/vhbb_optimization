@@ -25,35 +25,72 @@ Assuming you encountered no problems, the framework is ready to use.
 
 ## 2. About Configuration
 
-The config/ directory is actually a Python module that is dynamically loaded by the command line tools which are available when the Python virtual environment is active. That being so, the command line tools must be called from the top-level directory containing such a configuration module. The files within the configuration module divide the options into related groupings. The options used by the framework are declared in all UPPERCASE letters.
+The config/ directory is actually a Python module that is dynamically loaded by the command line tools which are available when the Python virtual environment is active. That being so, the command line tools must be called from the top-level directory containing this configuration module. The files within the configuration module divide the options into related groupings. The options used by the framework are declared in all UPPERCASE letters.
 
 ## 3. Preprocessing
 
-The first step is to preprocess the samples for use during optimization. The idea is to reduce the size of the ntuples to help increase the speed of training and evaluating a trial BDT during the sequential optimization. These compact ntuples contain only those events which pass the signal region selection and only those branches which may be relevant for use as a training feature or as an event weight. A new branch is also added which contains the value necessary to scale a sample to a target luminosity.
+The first step is to preprocess the samples for use during optimization. The idea is to reduce the size of the ntuples to help increase the speed of training and evaluating a trial BDT during the sequential optimization. These compact ntuples contain only those events which pass the signal region selection and only those branches which may be relevant for use as a training feature or as an event weight. A new branch is also added which contains the value necessary to scale a sample to a target luminosity. Modify the following options
 
-Go ahead and modify the following options.
-
-In `config/preprocess.py`
+in `config/preprocess.py`:
 - SELECTION: The signal region selection.
 - TARGET_LUMI: The target luminosity in inverse picobarns (pb^-1).
 - BRANCHES: The names of the branches to keep in the ntuple
 
-In `config/samples.py`
+in `config/samples.py`:
 - DIRECTORY: The parent directory of all the sample files IF they have one in common.
 - SIGNAL: A list of the signal samples and their properties.
 - BACKGROUND: A list of the background samples and their properties.
 
-Once the options are ready, simply call the `preprocess` command line tool in your terminal. A progress bar should appear with the title "Preprocessing Samples" and an absolute count of the completed samples. For example,
+Once the options are set, call the `preprocess` command line tool in your terminal. A progress bar should appear with the title "Preprocessing Samples" and an absolute count of the completed samples. For example,
 
 ```
 (venv)[swang373@lxplus034 vhbb_optimization(master)]$ preprocess 
 Preprocessing Samples  [######------------------------------]  6/35  0d 00:26:43
 ```
 
-Because the samples are processed in parallel, the estimated preprocessing time is inaccurate. It usually takes about half an hour for me to finish preprocessing 35 samples. The preprocessed samples are placed inside the output directory sample/ created in the current working directory.
+Because the samples are processed in parallel, the estimated preprocessing time is inaccurate. It usually takes under half an hour for me to finish preprocessing 35 samples. The preprocessed samples are placed inside the output directory sample/ created in the current working directory.
 
-## 4. Optimizating
+## 4. Optimization
 
+The main step is to optimize the hyperparameters of the BDT trained to classify the events in the samples as signal or background. Modify the following options.
 
+In `config/bdt.py`:
+- EVENT_WEIGHT: The formula expression defining how the signal and background events are weighted.
+- FEATURES: The formulas for the training features.
 
-If anything is unclear, please contact me and I will attempt to help as soon as I can.
+The event weight usually doesn't refer only to branches in the ntuples, but also external functions defined in ROOT macros. If that is the case, their shared object libraries and relevant files must be placed within the macros/ directory. For example, the weighting functions I use are defined in the file VHbbNamespace.h in the Xbb analysis framework, so I would have to copy that into the macros/ directory and compile it using ACLiC.
+
+```bash
+(venv)[swang373@lxplus034 vhbb_optimization(master)]$ cp /some/path/Xbb/interface/VHbbNamespace.h macros/
+(venv)[swang373@lxplus034 vhbb_optimization(master)]$ root -l
+root [0] .L macros/VHbbNameSpace.h++
+```
+
+The command line tool takes care of loading the libraries into ROOT's namespace.
+
+Once the options are set, call the `optimize` command line tool in your terminal. Check its help option to see how to set the number of trials and the verbosity. If you increase the verbosity to allow debugging messages, I encourage you to redirect standard output and error to a file to keep the logged messages.
+
+```bash
+optimize --num-trials 10 --verbose >& optimization.log
+# Below are log file contents.
+[optimize] INFO - Performing hyperparameter optimization search...
+[hyperopt.tpe] INFO - tpe_transform took 0.017382 seconds
+[hyperopt.tpe] INFO - TPE using 0 trials
+[hyperopt.tpe] INFO - tpe_transform took 0.089966 seconds
+[hyperopt.tpe] INFO - TPE using 1/1 trials with best loss 0.201629
+...
+[optimize] INFO - Best Trial Loss: 0.153359896382
+[optimize] INFO - Best Trial TMVA BDT Options: "NTrees=808.0:Shrinkage=0.218553351247:nCuts=29.0:Grad_NodePurityLimit=0.675205542335:MinNodeSize=3.97883370835:UseBaggedBoost=True:MaxDepth=5.0:BoostType=Grad:SeparationType=SDivSqrtSPlusB"
+```
+
+Once the optimization completes, the best loss value is reported along with its corresponding set of hyperparameters formatted as a TMVA BDT option string. The default number of trials is 100, which can take about half a day to complete. I usually launch this in a tmux session and check on it later in the day. You can now update your BDT option string with the optimized set of hyperparameters. Due to the nature of the optimization algorithm, the first few trials are used to initialize searching behaviour, so it is recommended to use more than five trials.
+
+## 5. Optimization Details
+
+The optimization is performed using the Tree of Parzen Estimators algorithm implemented by Dr. James Bergstra in his package [hyperopt](https://hyperopt.github.io/hyperopt/) and discussed in the publication ["Algorithms for Hyper-Parameter Optimization"](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf). 
+
+Because the optimization is specifically a minimization, the objective function is defined to be 1 - AUC_test, where AUC_test is the area under the ROC curve for the BDT as evaluated on the test set. Minimizing this value means maximizing AUC_test. We do not maximize AUC_train to avoid grossly overfitting on the training set, though optimizing the hyperparameters using the test set still biases the results. This will have to suffice perhaps until the VHbb analysis channels move to a strategy such as k-fold cross-validation.
+
+The hyperparameter search space is defined internally rather than presented as a configurable option in part due to a segmentation fault otherwise. It covers most if not all of the TMVA BDT options and allows the numerical options to vary within reasonable bounds. TODO: Table of hyperparameter choices and ranges.
+
+Thanks for beta testing the code! If anything is unclear or breaks, please contact me and I will attempt to help as soon as I can.
