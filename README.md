@@ -105,7 +105,7 @@ BoostType | Choice of {AdaBoost, RealAdaBoost, Bagging, Grad}
 UseBaggedBoost | Choice of {True, False}
 SeparationType | Choice of {CrossEntropy, GiniIndex, MisClassificationError, SDivSqrtSPlusB}
 
-Depending on the BoostType chosen for a trial, the following hyperparameters are also present.
+Depending on the BoostType chosen for a trial, the following hyperparameters are also present. The log uniform distributions are sampled "according to exp(uniform(low, high)) so that the logarithm of the return value is uniformly distributed."
 
 - **AdaBoost**
 
