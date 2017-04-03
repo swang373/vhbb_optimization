@@ -46,7 +46,7 @@ setup(
     long_description = readme(),
     author = 'Sean-Jiun Wang',
     author_email = 'sean-jiun.wang@cern.ch',
-    url = '',
+    url = 'https://github.com/swang373/vhbb_optimization',
     download_url = '',
     license = 'MIT',
     classifiers = [
