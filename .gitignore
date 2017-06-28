@@ -2,6 +2,6 @@
 venv/
 
 # Ignore dynamically created files and directories.
-TMVAClassification.root
+TMVAClassification*.root
 sample/
 weights/
