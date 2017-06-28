@@ -13,10 +13,10 @@ from vhbbopt.utils import load_config
 
 HYPERPARAM_SPACE = hp.choice('TMVA_BDT', [
     {
-        'NTrees': hp.quniform('NTrees', 100, 900, 1),
-        'MaxDepth': hp.quniform('MaxDepth', 2, 5, 1),
+        'NTrees': hp.quniform('NTrees', 100, 2000, 1),
+        'MaxDepth': hp.quniform('MaxDepth', 2, 10, 1),
         'MinNodeSize': hp.uniform('MinNodeSize', 0, 10),
-        'nCuts': hp.quniform('nCuts', 2, 40, 1),
+        'nCuts': hp.quniform('nCuts', 2, 50, 1),
         'BoostType': hp.choice('BoostType', [
             {
                 'BoostType': 'AdaBoost',
@@ -65,10 +65,8 @@ HYPERPARAM_CHOICE_MAP = {
 
 LOGGER = logging.getLogger('optimize')
 
-ROOT.gROOT.SetBatch(True)
 
-
-def train(signal_files, background_files, features, event_weight, space):
+def train(name, signal_files, background_files, features, event_weight, space):
     """The TMVA BDT training routine.
     
     Parameters
@@ -84,7 +82,7 @@ def train(signal_files, background_files, features, event_weight, space):
         minimized evaluted at the sampled point in the search space.
     """
     ROOT.TMVA.Tools.Instance()
-    with root_open('TMVAClassification.root', 'w') as outfile:
+    with root_open('TMVAClassification_{}.root'.format(name), 'w') as outfile:
         factory_options = ['!V', 'Silent', '!DrawProgressBar', 'Transformations=I', 'AnalysisType=Classification']
         factory = ROOT.TMVA.Factory('TMVAClassification', outfile, ':'.join(factory_options))
         # Add the training features.
@@ -131,22 +129,32 @@ def train(signal_files, background_files, features, event_weight, space):
         output_test_signal = outfile.Get('Method_BDT/BDT/MVA_BDT_S')
         output_test_background = outfile.Get('Method_BDT/BDT/MVA_BDT_B')
         auc_test = bdt_methodbase.GetROCIntegral(output_test_signal, output_test_background)
+        metric = 1 - auc_test
         # Return the results of the trial.
-        result = {'status': STATUS_OK, 'loss': 1 - auc_test}
+        result = {'status': STATUS_OK, 'loss': metric}
         return result
 
 
 @click.command(context_settings={'help_option_names': ['-h', '--help']})
+@click.argument('name')
 @click.option('-n', '--num-trials', default=100, help='The number of trials evaluated. The default is 100.')
 @click.option('-v', '--verbose', is_flag=True, help='Increase the verbosity level to show debug messages.')
-def cli(num_trials, verbose):
-    """A hyperparameter optimization tool for TMVA BDTs based on hyperopt.
-    This must be called within a workspace containing a configuration module
-    named config and an optional directory named macros which contains shared
-    libraries of compiled ROOT macros.
+def cli(name, num_trials, verbose):
+    """Optimize the hyperparameters for a TMVA BDT. The argument NAME is used
+    as the suffix for the TMVA output filename.
+
+    This must be called from within a workspace which contains a configuration
+    module named config and an optional directory named macros which contains
+    shared libraries of compiled ROOT macros.
+
+    The hyperparameter optimization uses the hyperopt package.
+    Bergstra, J., Yamins, D., Cox, D. D. (2013) Making a Science of Model Search:
+    Hyperparameter Optimization in Hundreds of Dimensions for Vision Architectures
     """
     logging_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(format='[%(name)s] %(levelname)s - %(message)s', level=logging_level)
+    # Set ROOT to batch mode.
+    ROOT.gROOT.SetBatch(True)
     # Load macros to the global ROOT instance.
     for macro in os.listdir('macros'):
         _, ext = os.path.splitext(macro)
@@ -161,7 +169,7 @@ def cli(num_trials, verbose):
         signal_files = [stack.enter_context(root_open('sample/{}.root'.format(sample.name))) for sample in config.SIGNAL]
         background_files = [stack.enter_context(root_open('sample/{}.root'.format(sample.name))) for sample in config.BACKGROUND]
         trials = Trials()
-        objective = functools.partial(train, signal_files, background_files, config.FEATURES, config.EVENT_WEIGHT)
+        objective = functools.partial(train, name, signal_files, background_files, config.FEATURES, config.EVENT_WEIGHT)
         best = fmin(objective, HYPERPARAM_SPACE, algo=tpe.suggest, max_evals=num_trials, trials=trials)
     LOGGER.debug('Trials: %s', trials.trials)
     LOGGER.debug('Trial Results: %s', trials.results)

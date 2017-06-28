@@ -68,10 +68,10 @@ root [0] .L macros/VHbbNameSpace.h++
 
 The command line tool takes care of loading the libraries into ROOT's namespace.
 
-Once the options are set, call the `optimize` command line tool in your terminal. Check its help option to see how to set the number of trials and the verbosity. If you increase the verbosity to allow debugging messages, I encourage you to redirect standard output and error to a file to keep the logged messages.
+Once the options are set, call the `optimize` command line tool in your terminal. The only required argument is a name (e.g. "some_name" in the example below), which is used in naming the TMVA training output files. This avoids multiple invocations of the command from crashing when trying to read, write, or close the same file. Check the help option to see how to set the number of trials and the verbosity. If you increase the verbosity to allow debugging messages, I encourage you to redirect standard output and error to a file to keep the logged messages.
 
 ```bash
-optimize --num-trials 10 --verbose >& optimization.log
+optimize some_name --num-trials 10 --verbose >& optimization.log
 # Below are log file contents.
 [optimize] INFO - Performing hyperparameter optimization search...
 [hyperopt.tpe] INFO - tpe_transform took 0.017382 seconds
@@ -97,10 +97,10 @@ The hyperparameter search space is defined internally rather than presented as a
 
 Hyperparameter | Sampling Distribution
 --- | ---
-NTrees | Discrete Uniform {100, 900}
-MaxDepth | Discrete Uniform {2, 5}
+NTrees | Discrete Uniform {100, 2000}
+MaxDepth | Discrete Uniform {2, 10}
 MinNodeSize | Uniform (0, 10)
-nCuts | Discrete Uniform {2, 40}
+nCuts | Discrete Uniform {2, 100}
 BoostType | Choice of {AdaBoost, RealAdaBoost, Bagging, Grad}
 UseBaggedBoost | Choice of {True, False}
 SeparationType | Choice of {CrossEntropy, GiniIndex, MisClassificationError, SDivSqrtSPlusB}

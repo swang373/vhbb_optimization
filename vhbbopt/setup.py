@@ -41,7 +41,7 @@ def readme():
 # Package Setup
 setup(
     name = 'vhbbopt',
-    version = '0.9.0',
+    version = '0.9.1',
     description = 'A command line tool for hyperparameter optimization.',
     long_description = readme(),
     author = 'Sean-Jiun Wang',
